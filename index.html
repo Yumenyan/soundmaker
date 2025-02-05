@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTR用走行音作成ガイド</title>
+</head>
+
+<body>
+    <style>
+        html {
+            background-color: #f1f1f1;
+            text-align: center;
+            color: #000000;
+        }
+
+        * {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        a {
+            display: block;
+            width: 30%;
+            padding: 15px;
+            margin: auto;
+            background-color: #0088ff;
+            text-decoration: none;
+            border-radius: 5px;
+            color: white;
+            text-align: center;
+        }
+
+        input {
+            display: block;
+            outline: none;
+            width: 80%;
+            padding: 15px;
+            margin: auto;
+            border: none;
+            background-color: #e0e0e0;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        a:hover {
+            background-color: #1692ff;
+            cursor: pointer;
+        }
+
+        #center {
+            padding: 20px;
+            text-align: left;
+        }
+    </style>
+    <div id="center">
+        <h1>MTR用走行音作成ガイド</h1>
+        <h4>私がMTR用の走行音を作成するときに行っている手順をまとめました。このガイドを使用するにはAudacityが必要です。また、このガイドではリソースパックの作成手順について説明しませんのでご了承ください。</h4>
+        <p>0.元にする走行音を用意します。OTOTETSUやVVVF-Simlator等のソフトで生成したものでも構いません。</p><br>
+        <p>1.生成するファイル数を入力(デフォルト:120)</p>
+        <input type="number" id="count" placeholder="生成するファイル数を入力..." value="120"><br>
+        <p>2.切り抜きオフセット値を入力(デフォルト:3.3)</p>
+        <input type="number" id="offset" placeholder="切り抜きオフセット値を入力..." value="3.3"><br>
+        <p>3.音声ファイル一つあたりの秒数を入力(デフォルト:0.6)</p>
+        <input type="number" id="second" placeholder="1ファイルあたりの秒数を入力..." value="0.6"><br>
+        <p>4.名前空間IDを入力</p>
+        <input type="text" id="input" placeholder="名前空間IDを入力..." value="my_custom_sound"><br>
+        <a id="generate" onclick="generate()">5.ラベルとjsonを生成 ※複数ファイルのダウンロードを許可してください</a><br>
+
+        <h3>～この後の手順～</h3>
+        <p>6.ファイルがダウンロード出来たら、Audacityを開き、ファイル→インポート→ラベルをインポート と進みます。(Audacityのバージョンによって差異があるかもしれません)</p>
+        <p>7.先ほどダウンロードしたlabel.txtというファイルを選び、読み込みます。</p>
+        <p>8.ファイル→インポート→オーディオをインポート と進み、走行音の音源をAudacityにインポートします。</p>
+        <p>9.次に、ファイル→オーディオをエクスポート と進み、以下の画像と同じ設定でエクスポートします。</p>
+        <img src="image.png">
+        <p>また、エクスポートするフォルダは「(起動構成があるフォルダ)/resourcepacks/(自分のリソースパック)/assets/mtr/sounds/(先ほど設定した名前空間ID)/acceleration」に設定してください。
+        </p>
+        <p>10.エクスポートが完了したら、Ctrl+Aで編集エリア内をすべて選択し、エフェクト→特殊→リバース(逆方向)と進み、適用します。</p>
+        <p>11.先ほどと同様の手順でファイルをエクスポートします。</p>
+        <p>ただし、エクスポートするフォルダは「(起動構成があるフォルダ)/resourcepacks/(自分のリソースパック)/assets/mtr/sounds/(先ほど設定した名前空間ID)/deceleration」に設定してください。
+        </p>
+        <p>12.Minecraftにファイルを認識させるため、「(起動構成があるフォルダ)/resourcepacks/(自分のリソースパック)/assets/mtr/」に先ほどダウンロードしたsounds.jsonを貼り付けます。
+        </p>
+        <p>13.「(起動構成があるフォルダ)/resourcepacks/(自分のリソースパック)/assets/mtr/mtr_custom_resources.json」を開き、走行音を設定したい車両のプロパティの欄に以下の画像に書いてある内容を追記します。
+        </p>
+        <img src="image2.png">
+        <p>ただし、speed_sound_base_idは設定した「名前空間ID」に、speed_sound_countは設定した「生成するファイル数」と同じ数値に書き換えてください。</p>
+        <p>14.リソースパックを適用し、走行音が正常に再生されればOKです。</p>
+    </div>
+
+    <script>
+
+        function generate() {
+            const count = document.getElementById('count').value;
+            const offset = document.getElementById('offset').value;
+            const second = document.getElementById('second').value;
+            const nameid = document.getElementById('input').value;
+            const element = document.getElementById('doc');
+            const abc = ['a', 'b', 'c']
+            let label = '';
+            let json = [];
+            for (let i = 0; i < count; i++) {
+                const temp = (i * parseFloat(second)) - (second / parseFloat(offset) * (i % 3 - 1)) - Math.floor(i / 3) * second;
+                label += temp + '	' + parseFloat(temp + parseFloat(second)) + '	' + 'speed_' + Math.floor(i / 3) + abc[i % 3] + '\n';
+                let tempjson = {};
+                tempjson.name = "mtr:" + nameid + "/acceleration/" + "speed_" + Math.floor(i / 3) + abc[i % 3];
+                tempjson.pitch = 1;
+                tempjson.attenuation_distance = 32;
+                const temp2 = nameid + '_acceleration_' + Math.floor(i / 3) + abc[i % 3];
+                json.push('"' + temp2 + '"' + ':' + JSON.stringify(tempjson));
+            }
+            let name = 'label.txt';
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([label], {
+                type: "text/plain"
+            }));
+            a.download = name;
+            a.click();
+            name = 'sounds.json';
+            a = document.createElement('a');
+            let exportjson = '{' + json.toString() + '}';
+            a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(exportjson);
+            a.download = name;
+            a.click();
+        }
+    </script>
+</body>
+
+</html>
